@@ -15,6 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PharmacyScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}, onPushFailed: (String) -> Unit = {}) {
     val snapshot by viewModel.snapshot.collectAsState()

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CallInsightsScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}) {
     val items by viewModel.callInsights.collectAsState()
