@@ -21,7 +21,7 @@ fun PharmacyScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}, onPushFail
     var showDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { SmallTopAppBar(title = { Text("الصيدليات") }) },
+        topBar = { TopAppBar(title = { Text("الصيدليات") }) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showDialog = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "إضافة")

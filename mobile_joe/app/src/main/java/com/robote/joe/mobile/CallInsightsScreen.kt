@@ -25,7 +25,7 @@ fun CallInsightsScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}) {
     var selectedKeyword by remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
-    Scaffold(topBar = { SmallTopAppBar(title = { Text("تحليلات المكالمات") }) }, snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text("تحليلات المكالمات") }) }, snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(12.dp)) {
             Column {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
