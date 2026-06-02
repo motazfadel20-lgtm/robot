@@ -781,7 +781,7 @@ private fun PharmacyDialog(
                 Text("أضف صيدلية جديدة", fontWeight = FontWeight.Bold)
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("اسم الصيدلية") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = medication, onValueChange = { medication = it }, label = { Text("الدواء") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = priceText, onValueChange = { priceText = it }, label = { Text("السعر") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Number))
+                OutlinedTextField(value = priceText, onValueChange = { priceText = it }, label = { Text("السعر") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = currency, onValueChange = { currency = it }, label = { Text("العملة") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("ملاحظات") }, modifier = Modifier.fillMaxWidth())
             }
@@ -825,8 +825,7 @@ private fun LoginScreen(onLogin: (String, String) -> Unit) {
                 onValueChange = { password = it },
                 label = { Text("كلمة المرور") },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Password)
+                visualTransformation = PasswordVisualTransformation()
             )
             Button(onClick = { onLogin(username, password) }, modifier = Modifier.padding(top = 16.dp)) {
                 Text("تسجيل دخول")

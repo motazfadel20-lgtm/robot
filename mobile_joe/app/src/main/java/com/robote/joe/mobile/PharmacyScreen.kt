@@ -76,7 +76,7 @@ fun AddPharmacyDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Str
         Column {
             OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("الاسم") })
             OutlinedTextField(value = med, onValueChange = { med = it }, label = { Text("الدواء") })
-            OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("السعر") }, keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Number))
+            OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("السعر") })
             OutlinedTextField(value = currency, onValueChange = { currency = it }, label = { Text("العملة") })
             OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("ملاحظات") })
         }
