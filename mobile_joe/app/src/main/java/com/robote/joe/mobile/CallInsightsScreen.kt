@@ -12,6 +12,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun CallInsightsScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}) {
@@ -30,11 +31,9 @@ fun CallInsightsScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = filter, onValueChange = { filter = it }, label = { Text("فلتر نصي") }, modifier = Modifier.weight(1f))
                     Button(onClick = {
-                        coroutineScope.launch {
-                            viewModel.syncCallInsights { success ->
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(if (success) "تمت المزامنة" else "فشل المزامنة")
-                                }
+                        viewModel.syncCallInsights { success ->
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(if (success) "تمت المزامنة" else "فشل المزامنة")
                             }
                         }
                     }) { Text("مزامنة") }

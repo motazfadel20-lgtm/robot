@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +24,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -38,7 +38,6 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Send
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -197,7 +196,8 @@ private fun JoeApp(
     val uploadHistoryError by viewModel.uploadHistoryError.collectAsStateWithLifecycle()
 
     MaterialTheme {
-        if (currentUser == null) {
+        val currentUserValue = currentUser
+        if (currentUserValue == null) {
             LoginScreen(onLogin = { username, password -> viewModel.login(username, password) })
         } else {
             JoeHomeScreen(
@@ -213,7 +213,7 @@ private fun JoeApp(
                 onStartFile = onStartFile,
                 onStartUploads = onStartUploads,
                 onLogout = { viewModel.logout() },
-                currentUser = currentUser
+                currentUser = currentUserValue
             )
         }
     }
@@ -531,7 +531,6 @@ private fun SnapshotTile(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun QuickActionRow(
     actions: List<String>,
@@ -540,12 +539,14 @@ private fun QuickActionRow(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionTitle("أوامر سريعة")
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             actions.forEach { action ->
-                AssistChip(onClick = { onPick(action) }, label = { Text(action) })
+                Button(onClick = { onPick(action) }) {
+                    Text(action)
+                }
             }
         }
     }

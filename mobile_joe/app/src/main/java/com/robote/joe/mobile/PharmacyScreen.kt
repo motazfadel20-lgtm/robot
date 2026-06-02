@@ -3,6 +3,8 @@ package com.robote.joe.mobile
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
@@ -21,7 +23,9 @@ fun PharmacyScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}, onPushFail
     Scaffold(
         topBar = { SmallTopAppBar(title = { Text("الصيدليات") }) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(text = { Text("إضافة") }, onClick = { showDialog = true })
+            FloatingActionButton(onClick = { showDialog = true }) {
+                Icon(Icons.Filled.Add, contentDescription = "إضافة")
+            }
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).fillMaxSize().padding(12.dp)) {
