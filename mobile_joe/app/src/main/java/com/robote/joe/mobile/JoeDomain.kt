@@ -14,6 +14,7 @@ import java.net.URL
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.security.MessageDigest
 
 data class HomeSnapshot(
     val todayReminders: Int = 0,
@@ -25,7 +26,10 @@ data class HomeSnapshot(
     val reminders: List<ReminderEntity> = emptyList(),
     val debts: List<DebtEntity> = emptyList(),
     val bills: List<BillEntity> = emptyList(),
-    val shopping: List<ShoppingItemEntity> = emptyList()
+    val shopping: List<ShoppingItemEntity> = emptyList(),
+    val pharmacies: List<PharmacyEntity> = emptyList()
+    // local call insights will be read from DB directly; add placeholder list
+    
 )
 
 class JoeRepository(
@@ -36,8 +40,9 @@ class JoeRepository(
             dao.observeReminders(),
             dao.observeDebts(),
             dao.observeBills(),
-            dao.observeShoppingItems()
-        ) { reminders, debts, bills, shopping ->
+            dao.observeShoppingItems(),
+            dao.observePharmacies()
+        ) { reminders, debts, bills, shopping, pharmacies ->
             val today = LocalDate.now()
             val openDebts = debts.filterNot { it.isPaid }
             HomeSnapshot(
@@ -50,7 +55,8 @@ class JoeRepository(
                 reminders = reminders,
                 debts = debts,
                 bills = bills,
-                shopping = shopping
+                shopping = shopping,
+                pharmacies = pharmacies
             )
         }
     }
@@ -72,6 +78,14 @@ class JoeRepository(
             dao.insertShoppingItem(ShoppingItemEntity(itemName = "بيض", addedBy = "البيت"))
             dao.insertShoppingItem(ShoppingItemEntity(itemName = "سكر", addedBy = "الزوجة"))
         }
+        if (dao.pharmacyCount() == 0) {
+            dao.insertPharmacy(PharmacyEntity(name = "صيدلية الهرم", medication = "باراسيتامول 500mg", price = 0.75, currency = "USD"))
+            dao.insertPharmacy(PharmacyEntity(name = "صيدلية النور", medication = "أموكسيسيلين 500mg", price = 2.5, currency = "USD"))
+        }
+        if (dao.userCount() == 0) {
+            val hash = hashPassword("alaa")
+            dao.insertUser(UserEntity(username = "alaa", passwordHash = hash, role = "admin"))
+        }
     }
 
     suspend fun addReminder(title: String, dueDate: LocalDate, notes: String = "") {
@@ -88,6 +102,159 @@ class JoeRepository(
 
     suspend fun addShopping(itemName: String, addedBy: String) {
         dao.insertShoppingItem(ShoppingItemEntity(itemName = itemName, addedBy = addedBy))
+    }
+
+    suspend fun addPharmacy(name: String, medication: String, price: Double, currency: String = "USD", notes: String = "") {
+        dao.insertPharmacy(PharmacyEntity(name = name, medication = medication, price = price, currency = currency, notes = notes))
+    }
+
+    suspend fun fetchRemoteCallInsights(baseUrl: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                val endpoint = "${baseUrl.trimEnd('/')}/api/joe/call_insights.php"
+                val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 20_000
+                    readTimeout = 30_000
+                    doInput = true
+                    setRequestProperty("Accept", "application/json")
+                }
+
+                val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                connection.disconnect()
+                val json = JSONObject(body)
+                if (json.optBoolean("ok", false)) {
+                    val arr = json.optJSONArray("insights") ?: return@withContext
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.optJSONObject(i) ?: continue
+                        val uploadId = if (obj.has("upload_id") && !obj.isNull("upload_id")) obj.optLong("upload_id") else null
+                        val filePath = obj.optString("file_path", null)
+                        val transcript = obj.optString("transcript", null)
+                        val insightsJson = obj.optString("insights_json", null)
+                        val numbersJson = obj.optString("numbers_json", null)
+                        val createdAt = obj.optString("created_at", null)
+                        dao.insertCallInsight(CallInsightEntity(uploadId = uploadId, filePath = filePath, transcript = transcript, insightsJson = insightsJson, numbersJson = numbersJson, createdAt = createdAt))
+                    }
+                }
+            } catch (_: Exception) {
+                // ignore for now
+            }
+        }
+    }
+
+        fun observeCallInsights(): Flow<List<CallInsightEntity>> = dao.observeCallInsights()
+
+        suspend fun deleteCallInsightLocal(id: Long) {
+            dao.deleteCallInsightById(id)
+        }
+
+        suspend fun deleteCallInsightRemote(baseUrl: String, id: Long): Boolean {
+            return withContext(Dispatchers.IO) {
+                try {
+                    val endpoint = "${baseUrl.trimEnd('/')}/api/joe/call_insights.php"
+                    val url = URL(endpoint)
+                    val connection = (url.openConnection() as HttpURLConnection).apply {
+                        requestMethod = "DELETE"
+                        connectTimeout = 20_000
+                        readTimeout = 30_000
+                        doInput = true
+                        doOutput = true
+                        setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                        setRequestProperty("Accept", "application/json")
+                    }
+
+                    val payload = JSONObject().apply { put("id", id) }
+                    OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(payload.toString()) }
+                    val response = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                    connection.disconnect()
+                    val json = JSONObject(response)
+                    json.optBoolean("ok", false)
+                } catch (_: Exception) {
+                    false
+                }
+            }
+        }
+
+    suspend fun fetchRemotePharmacies(baseUrl: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                val endpoint = "${baseUrl.trimEnd('/')}/api/joe/pharmacies.php"
+                val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 20_000
+                    readTimeout = 30_000
+                    doInput = true
+                    setRequestProperty("Accept", "application/json")
+                }
+
+                val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                connection.disconnect()
+                val json = JSONObject(body)
+                if (json.optBoolean("ok", false)) {
+                    val arr = json.optJSONArray("pharmacies") ?: return@withContext
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.optJSONObject(i) ?: continue
+                        val name = obj.optString("name")
+                        val medication = obj.optString("medication")
+                        val price = obj.optDouble("price", 0.0)
+                        val currency = obj.optString("currency", "USD")
+                        val notes = obj.optString("notes", "")
+                        dao.insertPharmacy(PharmacyEntity(name = name, medication = medication, price = price, currency = currency, notes = notes))
+                    }
+                }
+            } catch (_: Exception) {
+                // ignore network errors for now
+            }
+        }
+    }
+
+    suspend fun pushPharmacyRemote(baseUrl: String, pharmacy: PharmacyEntity): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val endpoint = "${baseUrl.trimEnd('/')}/api/joe/pharmacies.php"
+                val url = URL(endpoint)
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    connectTimeout = 20_000
+                    readTimeout = 30_000
+                    doInput = true
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    setRequestProperty("Accept", "application/json")
+                }
+
+                val payload = JSONObject().apply {
+                    put("name", pharmacy.name)
+                    put("medication", pharmacy.medication)
+                    put("price", pharmacy.price)
+                    put("currency", pharmacy.currency)
+                    put("notes", pharmacy.notes)
+                }
+                OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(payload.toString()) }
+                val response = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                connection.disconnect()
+                val json = JSONObject(response)
+                json.optBoolean("ok", false)
+            } catch (_: Exception) {
+                false
+            }
+        }
+    }
+
+    suspend fun createUser(username: String, password: String, role: String = "admin") {
+        val hash = hashPassword(password)
+        dao.insertUser(UserEntity(username = username, passwordHash = hash, role = role))
+    }
+
+    suspend fun validateUser(username: String, password: String): Boolean {
+        val user = dao.getUserByUsername(username) ?: return false
+        return user.passwordHash == hashPassword(password)
+    }
+
+    private fun hashPassword(password: String): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        val bytes = md.digest(password.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
     }
 }
 

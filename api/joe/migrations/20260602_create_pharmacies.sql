@@ -1,0 +1,14 @@
+-- Migration: create pharmacies table
+CREATE TABLE IF NOT EXISTS `pharmacies` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NOT NULL,
+  `address` TEXT DEFAULT NULL,
+  `medication` VARCHAR(255) DEFAULT NULL,
+  `latitude` DECIMAL(10,7) DEFAULT NULL,
+  `longitude` DECIMAL(10,7) DEFAULT NULL,
+  `price` DECIMAL(12,2) DEFAULT NULL,
+  `currency` VARCHAR(10) DEFAULT 'EGP',
+  `notes` TEXT DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

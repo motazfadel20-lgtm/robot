@@ -54,6 +54,35 @@ data class ShoppingItemEntity(
     val isDone: Boolean = false
 )
 
+@Entity(tableName = "pharmacies")
+data class PharmacyEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val medication: String,
+    val price: Double,
+    val currency: String = "USD",
+    val notes: String = ""
+)
+
+@Entity(tableName = "call_insights")
+data class CallInsightEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val uploadId: Long? = null,
+    val filePath: String? = null,
+    val transcript: String? = null,
+    val insightsJson: String? = null,
+    val numbersJson: String? = null,
+    val createdAt: String? = null
+)
+
+@Entity(tableName = "users")
+data class UserEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val username: String,
+    val passwordHash: String,
+    val role: String = "admin"
+)
+
 class JoeConverters {
     @TypeConverter
     fun fromLocalDate(value: LocalDate?): String? = value?.toString()
@@ -88,6 +117,30 @@ interface JoeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertShoppingItem(item: ShoppingItemEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPharmacy(item: PharmacyEntity)
+
+    @Query("SELECT * FROM pharmacies ORDER BY name ASC")
+    fun observePharmacies(): Flow<List<PharmacyEntity>>
+
+    @Query("SELECT * FROM call_insights ORDER BY createdAt DESC")
+    fun observeCallInsights(): Flow<List<CallInsightEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCallInsight(item: CallInsightEntity)
+    
+    @Query("DELETE FROM call_insights WHERE id = :id")
+    suspend fun deleteCallInsightById(id: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUser(item: UserEntity)
+
+    @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
+    suspend fun getUserByUsername(username: String): UserEntity?
+
+    @Query("SELECT COUNT(*) FROM users")
+    suspend fun userCount(): Int
+
     @Query("SELECT COUNT(*) FROM reminders")
     suspend fun reminderCount(): Int
 
@@ -99,11 +152,14 @@ interface JoeDao {
 
     @Query("SELECT COUNT(*) FROM shopping_items")
     suspend fun shoppingCount(): Int
+
+    @Query("SELECT COUNT(*) FROM pharmacies")
+    suspend fun pharmacyCount(): Int
 }
 
 @Database(
-    entities = [ReminderEntity::class, DebtEntity::class, BillEntity::class, ShoppingItemEntity::class],
-    version = 1,
+    entities = [ReminderEntity::class, DebtEntity::class, BillEntity::class, ShoppingItemEntity::class, PharmacyEntity::class, UserEntity::class, CallInsightEntity::class],
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(JoeConverters::class)
@@ -120,7 +176,7 @@ abstract class JoeDatabase : RoomDatabase() {
                     context.applicationContext,
                     JoeDatabase::class.java,
                     "joe_mobile.db"
-                ).build().also { INSTANCE = it }
+                ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
             }
         }
     }
