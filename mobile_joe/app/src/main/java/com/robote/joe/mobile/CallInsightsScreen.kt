@@ -4,8 +4,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,13 +22,22 @@ fun CallInsightsScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}) {
     var dateFrom by remember { mutableStateOf("") }
     var dateTo by remember { mutableStateOf("") }
     var selectedKeyword by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(topBar = { SmallTopAppBar(title = { Text("تحليلات المكالمات") }) }, snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(12.dp)) {
             Column {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = filter, onValueChange = { filter = it }, label = { Text("فلتر نصي") }, modifier = Modifier.weight(1f))
-                    Button(onClick = { viewModel.syncCallInsights { snackbarHostState.showSnackbar("تمت المزامنة") } }) { Text("مزامنة") }
+                    Button(onClick = {
+                        coroutineScope.launch {
+                            viewModel.syncCallInsights { success ->
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(if (success) "تمت المزامنة" else "فشل المزامنة")
+                                }
+                            }
+                        }
+                    }) { Text("مزامنة") }
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -44,9 +56,12 @@ fun CallInsightsScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}) {
                     }.distinct()
                 }
                 if (keywords.isNotEmpty()) {
-                    FlowRow(mainAxisSpacing = 8.dp, crossAxisSpacing = 8.dp) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
                         keywords.forEach { kw ->
-                            AssistChip(onClick = { selectedKeyword = if (selectedKeyword == kw) null else kw }, label = { Text(kw) }, modifier = Modifier) }
+                            Button(onClick = { selectedKeyword = if (selectedKeyword == kw) null else kw }) {
+                                Text(kw)
+                            }
+                        }
                     }
                     Spacer(Modifier.height(8.dp))
                 }
@@ -73,14 +88,14 @@ fun CallInsightsScreen(viewModel: JoeViewModel, onClose: () -> Unit = {}) {
                                 Text(item.createdAt ?: "")
                             }
                             IconButton(onClick = {
-                                // confirm delete
                                 viewModel.deleteCallInsight(item.id) { ok ->
-                                    // show snackbar
                                     val msg = if (ok) "تم الحذف" else "حذف محلي (فشل الحذف عن بعد)"
-                                    LaunchedEffect(msg) { snackbarHostState.showSnackbar(msg) }
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(msg)
+                                    }
                                 }
                             }) {
-                                Icon(Icons.Filled.History, contentDescription = "حذف")
+                                Icon(Icons.Filled.Delete, contentDescription = "حذف")
                             }
                         }
                     }

@@ -201,6 +201,7 @@ private fun JoeApp(
             LoginScreen(onLogin = { username, password -> viewModel.login(username, password) })
         } else {
             JoeHomeScreen(
+                viewModel = viewModel,
                 snapshot = snapshot,
                 conversation = conversation,
                 uiState = uiState,
@@ -221,6 +222,7 @@ private fun JoeApp(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun JoeHomeScreen(
+    viewModel: JoeViewModel,
     snapshot: HomeSnapshot,
     conversation: List<ConversationMessage>,
     uiState: JoeUiState,
@@ -291,7 +293,7 @@ private fun JoeHomeScreen(
                         Icon(Icons.Filled.History, contentDescription = "سجل التحميلات")
                     }
                     IconButton(onClick = onStartFile) {
-                        Icon(Icons.Filled.AttachFile, contentDescription = "رفع ملف")
+                        Icon(Icons.Filled.Attachment, contentDescription = "رفع ملف")
                     }
                     IconButton(onClick = onStartCamera) {
                         Icon(Icons.Filled.CameraAlt, contentDescription = "كاميرا")
